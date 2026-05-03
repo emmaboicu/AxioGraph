@@ -39,11 +39,18 @@ Am folosit AxioGraph la lucrări experimentale (virtuale):
 - Determinarea constantei lui Planck folosind caracteristicile curent-tensiune ale unei celule fotoelectrice pentru două radiații   monocromatice diferite.
 
 
-Utilizarea aplicației
+Instrucțiuni rapide pentru elevi
 
-Deschide aplicația din linkul GitHub Pages al proiectului.
+1. Deschide aplicația din linkul primit.
+2. Alege scara pe OX și OY.
+3. Alege pasul de afișare a reperelor pe axe.Pasul ajută la verificarea scării:
+- dacă valorile scrise cad pe liniile grilei, scara este ușor de folosit;
+- dacă valorile cad între linii, scara aleasă este nepotrivită sau prea greu de citit.
+4. Introdu punctele experimentale.
+5. Observă tendința punctelor și trasează dreapta sau curba de tendință.
+6. Alege puncte potrivite pentru pantă, dacă lucrarea cere acest lucru.
+7. Marchează intersecțiile cu axele, dacă sunt necesare.
+8. Salvează lucrarea folosind butonul Save.
+9. Păstrează fișierul `.axio`; îl poți încărca mai târziu cu Load.
 
-Pentru continuarea lucrului, folosește:
-- Save pentru salvarea lucrării;
-- Load pentru încărcarea fișierului `.axio` salvat anterior.
 
