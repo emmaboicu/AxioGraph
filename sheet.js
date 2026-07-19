@@ -1,10 +1,12 @@
 // AxioGraph_4 — sheet.js
 // Foaia milimetrică + coordonate SVG
 
-export const x0 = 16;
+export const x0 = 136;
 export const y0 = 250;
 export const gridWidth = 240;
 export const gridHeight = 240;
+export const gridLeft = x0 - gridWidth / 2;
+export const gridRight = x0 + gridWidth / 2;
 
 export const gridFineStroke = 0.05;
 export const gridMediumStroke = 0.12;
@@ -20,7 +22,7 @@ export function clamp(value, min, max) {
 
 export function clampPointToGrid(point) {
   return {
-    x: clamp(point.x, x0, x0 + gridWidth),
+    x: clamp(point.x, gridLeft, gridRight),
     y: clamp(point.y, y0 - gridHeight, y0)
   };
 }
@@ -41,7 +43,7 @@ export function drawGrid() {
   gridGroup.innerHTML = '';
 
   for (let i = 0; i <= gridWidth; i++) {
-    const x = x0 + i;
+    const x = gridLeft + i;
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
 
     line.setAttribute('x1', x);
@@ -61,9 +63,9 @@ export function drawGrid() {
     const y = y0 - j;
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
 
-    line.setAttribute('x1', x0);
+    line.setAttribute('x1', gridLeft);
     line.setAttribute('y1', y);
-    line.setAttribute('x2', x0 + gridWidth);
+    line.setAttribute('x2', gridRight);
     line.setAttribute('y2', y);
     line.setAttribute('stroke', '#4fc8fc');
     line.setAttribute(
@@ -82,9 +84,9 @@ export function drawAxes() {
   const hAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
   const hCenterY = y0 + axisStroke / 2;
 
-  hAxis.setAttribute('x1', x0);
+  hAxis.setAttribute('x1', gridLeft);
   hAxis.setAttribute('y1', hCenterY);
-  hAxis.setAttribute('x2', x0 + gridWidth);
+  hAxis.setAttribute('x2', gridRight);
   hAxis.setAttribute('y2', hCenterY);
   hAxis.setAttribute('stroke', '#00008B');
   hAxis.setAttribute('stroke-width', axisStroke);
@@ -93,7 +95,7 @@ export function drawAxes() {
   axesGroup.appendChild(hAxis);
 
   const vAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  const vCenterX = x0 - axisStroke / 2;
+  const vCenterX = x0;
 
   vAxis.setAttribute('x1', vCenterX);
   vAxis.setAttribute('y1', y0);
@@ -124,7 +126,7 @@ export function valueToGridX(value, scaleXValue) {
 
   const x = x0 + Math.round((value / scaleValX) * 10);
 
-  if (x < x0 || x > x0 + gridWidth) return null;
+  if (x < gridLeft || x > gridRight) return null;
 
   return x;
 }

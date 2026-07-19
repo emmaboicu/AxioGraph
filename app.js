@@ -10,6 +10,8 @@ import {
   y0,
   gridWidth,
   gridHeight,
+  gridLeft,
+  gridRight,
   axisStroke,
   axisTickStroke,
   coordGuideStroke,
@@ -125,7 +127,21 @@ function valuesToSvgPoint(valueX, valueY) {
   return sheetValuesToSvgPoint(valueX, valueY, scaleXValue, scaleYValue);
 }
 
+function isOriginValue(value) {
+  return Math.abs(Number(value)) < 1e-9;
+}
+
+function addTickX(value) {
+  if (!isOriginValue(value)) ticksX.add(value);
+}
+
+function addTickY(value) {
+  if (!isOriginValue(value)) ticksY.add(value);
+}
+
 function addAxisMarker(group, axis, coord, label, color) {
+  if (isOriginValue(label)) return;
+
   const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
   const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
 
@@ -144,9 +160,9 @@ function addAxisMarker(group, axis, coord, label, color) {
     tick.setAttribute('x2', x0 - 6);
     tick.setAttribute('y2', coord);
 
-    text.setAttribute('x', x0 - 8);
+    text.setAttribute('x', x0);
     text.setAttribute('y', coord + 1.2);
-    text.setAttribute('text-anchor', 'end');
+    text.setAttribute('text-anchor', 'middle');
   }
   text.setAttribute('data-axis', axis);
   tick.setAttribute('stroke', color);
@@ -274,12 +290,12 @@ function refreshTicks() {
     let hoverText = null;
 
     if (axis === 'x') {
-      sensor.setAttribute('x', x0);
+      sensor.setAttribute('x', gridLeft);
       sensor.setAttribute('y', y0);
       sensor.setAttribute('width', gridWidth);
       sensor.setAttribute('height', 18);
     } else {
-      sensor.setAttribute('x', x0 - 18);
+      sensor.setAttribute('x', x0 - 9);
       sensor.setAttribute('y', y0 - gridHeight);
       sensor.setAttribute('width', 18);
       sensor.setAttribute('height', gridHeight);
@@ -306,8 +322,7 @@ function refreshTicks() {
       if (axis === 'x') {
         hoverText = makeSvgText(label, point.x, y0 + 15, 'middle', 6);
       } else {
-        hoverText = makeSvgText(label, x0 - 11, point.y + 1.8, 'end', 6);
-        hoverText.setAttribute('transform', `rotate(-90 ${x0 - 11} ${point.y + 1.8})`);
+        hoverText = makeSvgText(label, x0, point.y + 1.8, 'middle', 6);
       }
 
       hoverText.setAttribute('fill', '#002b80');
@@ -334,11 +349,12 @@ function refreshTicks() {
   if (!isNaN(scaleValX) && scaleValX !== 0) {
     xItems = Array.from(ticksX)
       .sort((a, b) => a - b)
+      .filter((val) => !isOriginValue(val))
       .map((val) => ({
         val,
         coord: x0 + Math.round((val / scaleValX) * 10)
       }))
-      .filter((item) => item.coord >= x0 && item.coord <= x0 + gridWidth);
+      .filter((item) => item.coord >= gridLeft && item.coord <= gridRight);
 
     let lastLabelX = -Infinity;
     const minLabelSpacingX = 8;
@@ -377,6 +393,7 @@ function refreshTicks() {
   if (!isNaN(scaleValY) && scaleValY !== 0) {
     yItems = Array.from(ticksY)
       .sort((a, b) => a - b)
+      .filter((val) => !isOriginValue(val))
       .map((val) => ({
         val,
         coord: y0 - Math.round((val / scaleValY) * 10)
@@ -385,7 +402,7 @@ function refreshTicks() {
 
     let lastLabelY = Infinity;
     const minLabelSpacingY = 6;
-    const labelX = x0 - 4;
+    const labelX = x0;
 
     yItems.forEach((item) => {
       const val = item.val;
@@ -408,7 +425,7 @@ function refreshTicks() {
         !hasTextNear(labelX, yCoord + 1.2);
 
       if (canShowLabel) {
-        const text = makeSvgText(val, labelX, yCoord + 1.2, 'end');
+        const text = makeSvgText(val, labelX, yCoord + 1.2, 'middle');
         tickMarksGroup.appendChild(text);
         lastLabelY = yCoord;
       }
@@ -428,7 +445,7 @@ function refreshScaleStepLabels() {
   const stepY = parseFloat(stepYValue);
 
   if (!isNaN(scaleX) && scaleX !== 0 && !isNaN(stepX) && stepX > 0) {
-    const maxXValue = (gridWidth / 10) * scaleX;
+    const maxXValue = ((gridRight - x0) / 10) * scaleX;
     const numStepsX = Math.floor(maxXValue / stepX);
 
     for (let i = 1; i <= numStepsX; i++) {
@@ -477,9 +494,9 @@ function refreshScaleStepLabels() {
 
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.textContent = Number(value.toFixed(6));
-      text.setAttribute('x', x0 - 3);
+      text.setAttribute('x', x0);
       text.setAttribute('y', y + 1.2);
-      text.setAttribute('text-anchor', 'end');
+      text.setAttribute('text-anchor', 'middle');
       text.setAttribute('font-size', '3.2');
       text.setAttribute('font-family', 'Poppins, sans-serif');
       text.setAttribute('fill', '#146f9c');
@@ -511,8 +528,8 @@ function drawExperimentalPoint(valueX, valueY) {
     return line;
   };
 
-  pointGroup.appendChild(createGuideLine(x, y0, x, y));
-  pointGroup.appendChild(createGuideLine(x0, y, x, y));
+  if (y !== y0) pointGroup.appendChild(createGuideLine(x, y0, x, y));
+  if (x !== x0 && y !== y0) pointGroup.appendChild(createGuideLine(x0, y, x, y));
 
   const point = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   point.setAttribute('cx', x);
@@ -559,8 +576,8 @@ function addDataPoint() {
     return;
   }
 
-  ticksX.add(valX);
-  ticksY.add(valY);
+  addTickX(valX);
+  addTickY(valY);
   experimentalPointsData.push({ x: valX, y: valY });
 
   refreshTicks();
@@ -573,18 +590,23 @@ function addDataPoint() {
   inputY.value = '';
 }
 
-function deleteTickXValue(val) {
-  if (ticksX.has(val)) {
-    ticksX.delete(val);
-    refreshTicks();
-  }
+function isTickXInUse(value) {
+  return experimentalPointsData.some(pt => pt.x === value) ||
+    slopePointsData.some(pt => pt && pt.x === value) ||
+    intersectionPointsData.x === value;
 }
 
-function deleteTickYValue(val) {
-  if (ticksY.has(val)) {
-    ticksY.delete(val);
-    refreshTicks();
-  }
+function isTickYInUse(value) {
+  return experimentalPointsData.some(pt => pt.y === value) ||
+    slopePointsData.some(pt => pt && pt.y === value) ||
+    intersectionPointsData.y === value;
+}
+
+function pruneUnusedTick(axis, value) {
+  if (Number.isNaN(value)) return;
+
+  if (axis === 'x' && !isTickXInUse(value)) ticksX.delete(value);
+  if (axis === 'y' && !isTickYInUse(value)) ticksY.delete(value);
 }
 
 function deletePointByValues(valX, valY) {
@@ -606,8 +628,8 @@ function deleteFullDataPoint() {
 
   deletePointByValues(valX, valY);
 
-  ticksX.delete(valX);
-  ticksY.delete(valY);
+  pruneUnusedTick('x', valX);
+  pruneUnusedTick('y', valY);
 
   refreshTicks();
   refreshScaleStepLabels();
@@ -695,12 +717,12 @@ function redrawSlopePoints() {
 function resetSlopePoint(index) {
   const oldPoint = slopePointsData[index];
 
-  if (oldPoint) {
-    ticksX.delete(oldPoint.x);
-    ticksY.delete(oldPoint.y);
-  }
-
   slopePointsData[index] = null;
+
+  if (oldPoint) {
+    pruneUnusedTick('x', oldPoint.x);
+    pruneUnusedTick('y', oldPoint.y);
+  }
   refreshTicks();
   refreshScaleStepLabels();
   redrawExperimentalPoints();
@@ -716,14 +738,10 @@ function resetSlopePoint(index) {
   }
 }
 function resetSlopePoints() {
-  slopePointsData.forEach((pt) => {
-    if (pt) {
-      ticksX.delete(pt.x);
-      ticksY.delete(pt.y);
-    }
-  });
+  slopePointsData = [null, null];
 
-  slopePointsData = [];
+  Array.from(ticksX).forEach((value) => pruneUnusedTick('x', value));
+  Array.from(ticksY).forEach((value) => pruneUnusedTick('y', value));
   slopePointsGroup.innerHTML = '';
 
   refreshTicks();
@@ -852,8 +870,8 @@ function createDefaultTrendline(index) {
   const state = trendlineStates[index];
 
   if (index === 1) {
-    state.p1 = { x: x0 + gridWidth * 0.18, y: y0 - gridHeight * 0.28 };
-    state.p2 = { x: x0 + gridWidth * 0.82, y: y0 - gridHeight * 0.72 };
+    state.p1 = { x: gridLeft + gridWidth * 0.18, y: y0 - gridHeight * 0.28 };
+    state.p2 = { x: gridLeft + gridWidth * 0.82, y: y0 - gridHeight * 0.72 };
   }
 
   state.isVisible = true;
@@ -1104,8 +1122,8 @@ function getWorkState() {
     scale: { x: scaleXValue, y: scaleYValue },
     step: { x: stepXValue, y: stepYValue },
     ticks: {
-      x: Array.from(ticksX),
-      y: Array.from(ticksY)
+      x: Array.from(ticksX).filter((value) => !isOriginValue(value)),
+      y: Array.from(ticksY).filter((value) => !isOriginValue(value))
     },
     experimentalPoints: experimentalPointsData.map(pt => ({ x: pt.x, y: pt.y })),
     trendlines: {
@@ -1157,12 +1175,12 @@ function applyWorkState(state) {
 
   (state.ticks?.x || []).forEach(v => {
     const n = Number(v);
-    if (!Number.isNaN(n)) ticksX.add(n);
+    if (!Number.isNaN(n)) addTickX(n);
   });
 
   (state.ticks?.y || []).forEach(v => {
     const n = Number(v);
-    if (!Number.isNaN(n)) ticksY.add(n);
+    if (!Number.isNaN(n)) addTickY(n);
   });
 
   experimentalPointsData = (state.experimentalPoints || [])
@@ -1183,9 +1201,14 @@ function applyWorkState(state) {
   curveLineState.dragIndex = null;
   curveLineState.pointerId = null;
 
-  slopePointsData = (state.slopePoints || [])
-    .map(pt => pt ? ({ x: Number(pt.x), y: Number(pt.y) }) : null)
-    .filter(pt => pt && !Number.isNaN(pt.x) && !Number.isNaN(pt.y));
+  slopePointsData = [0, 1].map((index) => {
+    const pt = state.slopePoints?.[index];
+    if (!pt) return null;
+
+    const x = Number(pt.x);
+    const y = Number(pt.y);
+    return !Number.isNaN(x) && !Number.isNaN(y) ? { x, y } : null;
+  });
 
   intersectionPointsData = {
     x: state.intersections?.x !== null && state.intersections?.x !== undefined ? Number(state.intersections.x) : null,
@@ -1333,8 +1356,8 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
     }
 
     slopePointsData[0] = { x: p1x, y: p1y };
-    ticksX.add(p1x);
-    ticksY.add(p1y);
+    addTickX(p1x);
+    addTickY(p1y);
     refreshTicks();
     refreshScaleStepLabels();
     redrawExperimentalPoints();
@@ -1352,8 +1375,8 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
     }
 
     slopePointsData[1] = { x: p2x, y: p2y };
-    ticksX.add(p2x);
-    ticksY.add(p2y);
+    addTickX(p2x);
+    addTickY(p2y);
     refreshTicks();
     refreshScaleStepLabels();
     redrawExperimentalPoints();
@@ -1373,7 +1396,7 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
   }
 
   intersectionPointsData.x = value;
-  ticksX.add(value);
+  addTickX(value);
   refreshTicks();
   refreshScaleStepLabels();
   redrawExperimentalPoints();
@@ -1390,7 +1413,7 @@ $('add-intersection-y').addEventListener('click', () => {
   }
 
   intersectionPointsData.y = value;
-  ticksY.add(value);
+  addTickY(value);
   refreshTicks();
   refreshScaleStepLabels();
   redrawExperimentalPoints();
@@ -1399,13 +1422,10 @@ $('add-intersection-y').addEventListener('click', () => {
 });
   
 $('reset-intersection-x').addEventListener('click', () => {
-  const value = getNumberFromInput('intersection-x-value');
-
-  if (!isNaN(value)) {
-    ticksX.delete(value);
-  }
+  const oldValue = intersectionPointsData.x;
 
   intersectionPointsData.x = null;
+  if (oldValue !== null) pruneUnusedTick('x', oldValue);
   clearInput('intersection-x-value');
 
   refreshTicks();
@@ -1416,13 +1436,10 @@ $('reset-intersection-x').addEventListener('click', () => {
 });
 
 $('reset-intersection-y').addEventListener('click', () => {
-  const value = getNumberFromInput('intersection-y-value');
-
-  if (!isNaN(value)) {
-    ticksY.delete(value);
-  }
+  const oldValue = intersectionPointsData.y;
 
   intersectionPointsData.y = null;
+  if (oldValue !== null) pruneUnusedTick('y', oldValue);
   clearInput('intersection-y-value');
 
   refreshTicks();
@@ -1597,8 +1614,8 @@ function setupPointerEvents() {
         const rawDx = currentPoint.x - state.lastPoint.x;
         const rawDy = currentPoint.y - state.lastPoint.y;
 
-        const minDx = x0 - Math.min(state.p1.x, state.p2.x);
-        const maxDx = (x0 + gridWidth) - Math.max(state.p1.x, state.p2.x);
+        const minDx = gridLeft - Math.min(state.p1.x, state.p2.x);
+        const maxDx = gridRight - Math.max(state.p1.x, state.p2.x);
         const minDy = (y0 - gridHeight) - Math.min(state.p1.y, state.p2.y);
         const maxDy = y0 - Math.max(state.p1.y, state.p2.y);
 
@@ -1661,7 +1678,8 @@ function init() {
   slopePointsGroup = $('slope-points');
   intersectionPointsGroup = $('intersection-points');
 
-  ;
+
+  initTrendlineConfigs();
 
   drawGrid();
   drawAxes();
@@ -1686,5 +1704,4 @@ function init() {
   markSaved();
 }
 
-initTrendlineConfigs();
 window.addEventListener('load', init);
